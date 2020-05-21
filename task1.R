@@ -2,12 +2,14 @@ library(readxl)
 library(tidyverse)
 library(lubridate)
 library(funModeling)
-library(geosphere)
 
-#Extracting weeks and hours from dates
-# 1. WEEKS
+df = read_xlsx("ANZ synthesised transaction dataset.xlsx", col_names = TRUE)
+df_status(df)
+df$bpay_biller_code = as.character(df$bpay_biller_code)
+plot_num(df)
+
+#EXTRACTING WEEKS AND HOURS FROM DATE AND EXTRACTION RESPECTIVELY
 df$weekday = weekdays(df$date)
-# 2. HOUR
 df$hour = as.character(df$extraction)
 df$hour = substr(df$hour,12,19)
 df$hour = hour(as.POSIXct(df$hour, format = "%H:%M:%S"))
@@ -22,29 +24,42 @@ merc_loc = data.frame(df$merchant_long_lat)
 merc_loc = data.frame(separate(merc_loc, col = df.merchant_long_lat, into = c("merc_long","merc_lat"), sep = " "))
 df <- cbind(df, merc_loc)
 
+#AVERAGE MONTHLY TRANSACTION DISTRIBUTION
+df_mon <- df %>% group_by(customer_id) %>% summarise(mon_avg_vol = round(n()/3,0))
 
-#AVERAGE TRANSACTION BY DAY
-df2 <- df %>% group_by(customer_id) %>% summarise(mon_avg_vol = round(n()/3,0))
+hist(df_mon$mon_avg_vol,
+     xlab= 'Monthly transaction volume', ylab='No. of customers', main = "Histogram of customers' monthly transaction volume",col = "#27ba9f")
 
-hist(df2$mon_avg_vol,
-     xlab= 'Monthly transaction volume', ylab='No. of customers', main = "Histogram of customers' monthly transaction volume")
+#AVERAGE DAILY TRANSACTION DISTRUBUTION
+df_day <- df %>% group_by(customer_id) %>% summarise(da_avg_vol = round(n()/91,0))
 
-df4 <- df%>% select(date, weekday) %>%
-  group_by(date, weekday) %>%
-  summarise(daily_avg_vol =n()) %>%
-  group_by(weekday) %>%
-  summarise(avg_vol=mean(daily_avg_vol,na.rm=TRUE ))
-df4 <- df4 %>% mutate(weekday =  factor(weekday, levels = c( "Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"))) %>% arrange(weekday)
+hist(df_day$da_avg_vol, xlab= 'Daily transaction volume', ylab='No. of customers', main = "Histogram of customers' Daily transaction volume",col = "#27ba9f")
 
-ggplot(df4,aes(x=weekday, y=avg_vol)) +geom_point()+geom_line(aes(group = 1))+
-  ggtitle('Average transaction volume by weekday') +
-  labs(x='Weekday',y='Transaction volume')
+#AVERAGE TRANSACTION BY WEEKDAY
+df_wk <- df%>% select(date, weekday) %>%
+ group_by(date, weekday) %>%
+ summarise(daily_avg_vol =n()) %>%
+ group_by(weekday) %>%
+ summarise(avg_vol=mean(daily_avg_vol,na.rm=TRUE ))
+df_wk <- df_wk %>% mutate(weekday =  factor(weekday, levels = c("Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"))) %>% arrange(weekday)
+ 
+ggplot(df_wk,aes(x=weekday, y=avg_vol)) +geom_point(colour = "#CC0000")+geom_line(aes(group = 1), colour = "Steelblue") + 
+ ggtitle('Average transaction volume by weekday') +
+ labs(x='Weekday',y='Transaction volume')
 
-#AVERAGE TRANSACTION BY HOUR
+#AVERAGE TRANSACTION PLOTTED BY HOURS
 df_hr <- df %>%
   select(date,hour) %>%
   group_by(date,hour) %>%
   summarise(trans_vol=n()) %>%
   group_by(hour) %>%
   summarise(trans_vol_per_hr = mean(trans_vol,na.rm=TRUE))
-ggplot(df_hr,aes(x=hour,y=trans_vol_per_hr))+geom_point()+geom_line(aes(group = 1))+ ggtitle('Average transaction volume by hour') + labs(x='Hour',y='Transaction volume') + expand_limits( y = 0)
+
+ggplot(df_hr,aes(x=hour,y=trans_vol_per_hr))+geom_point(colour ="Red")+geom_line(aes(group = 1), colour ="Steelblue")+ ggtitle('Average transaction volume by hour') + labs(x='Hour',y='Transaction volume') + expand_limits( y = 0)
+
+#PLOTTING OUTLIERS IN THE TRANSACTIONAL DATA
+tapply(df$amount, df$movement, summary)
+
+ggplot(data = df, aes(x=movement, y=amount)) +
+ geom_point(aes(color=movement), alpha=0.2, position ="jitter") +
+ geom_boxplot(outlier.size=4, outlier.colour='blue', alpha=0.1)
