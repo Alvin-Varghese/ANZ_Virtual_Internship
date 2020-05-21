@@ -8,10 +8,17 @@ library(funModeling)
 ONCE THE LIBRARIES ARE LOADED, OUR NEXT STEP WILL BE LOADING THE DATASET AND TAKING A LOOK AT THE DATA
 ```{r}
 df = read_xlsx("ANZ synthesised transaction dataset.xlsx", col_names = TRUE)
+```
+
+```{r}
 df_status(df)
 ```
 ```{r}
 df$bpay_biller_code = as.character(df$bpay_biller_code)
+```
+
+```{r}
+plot_num(df)
 ```
 
 EXTRACTING INFORMATION FROM THE DATES (using libridate library)
@@ -68,3 +75,14 @@ ggplot(data = df, aes(x=movement, y=amount)) +
  geom_boxplot(outlier.size=4, outlier.colour='blue', alpha=0.1)
 ```
 
+WE CAN GET THE LONGITUDE AND LATITUDE FOR THE CUSTOMERS AND THE MERCHANTS
+```{r}
+#1. Customer location
+cust_loc = data.frame(df$long_lat)
+cust_loc = data.frame(separate(cust_loc, col = df.long_lat, into = c("cust_long","cust_lat"), sep = " "))
+df <- cbind(df, cust_loc)
+#2. Merchant location
+merc_loc = data.frame(df$merchant_long_lat)
+merc_loc = data.frame(separate(merc_loc, col = df.merchant_long_lat, into = c("merc_long","merc_lat"), sep = " "))
+df <- cbind(df, merc_loc)
+```
