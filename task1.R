@@ -14,16 +14,6 @@ df$hour = as.character(df$extraction)
 df$hour = substr(df$hour,12,19)
 df$hour = hour(as.POSIXct(df$hour, format = "%H:%M:%S"))
 
-#Extracting Latitude and Longitudes
-#1. Customer location
-cust_loc = data.frame(df$long_lat)
-cust_loc = data.frame(separate(cust_loc, col = df.long_lat, into = c("cust_long","cust_lat"), sep = " "))
-df <- cbind(df, cust_loc)
-#2. Merchant location
-merc_loc = data.frame(df$merchant_long_lat)
-merc_loc = data.frame(separate(merc_loc, col = df.merchant_long_lat, into = c("merc_long","merc_lat"), sep = " "))
-df <- cbind(df, merc_loc)
-
 #AVERAGE MONTHLY TRANSACTION DISTRIBUTION
 df_mon <- df %>% group_by(customer_id) %>% summarise(mon_avg_vol = round(n()/3,0))
 
@@ -63,3 +53,34 @@ tapply(df$amount, df$movement, summary)
 ggplot(data = df, aes(x=movement, y=amount)) +
  geom_point(aes(color=movement), alpha=0.2, position ="jitter") +
  geom_boxplot(outlier.size=4, outlier.colour='blue', alpha=0.1)
+
+#Extracting Latitude and Longitudes
+#1. Customer location
+cust_loc = data.frame(df$long_lat)
+cust_loc = data.frame(separate(cust_loc, col = df.long_lat, into = c("cust_long","cust_lat"), sep = " "))
+
+#2. Merchant location
+merc_loc = data.frame(df$merchant_long_lat)
+merc_loc = data.frame(separate(merc_loc, col = df.merchant_long_lat, into = c("merc_long","merc_lat"), sep = " "))
+
+df_loc <- cbind(df$customer_id,cust_loc,merc_loc)
+colnames(df_loc)[which(names(df_loc)=="df$customer_id")] <- "customer_id"
+
+df_loc$cust_long = as.numeric(df_loc$cust_long)
+df_loc$cust_lat = as.numeric(df_loc$cust_lat)
+df_loc$merc_lat = as.numeric(df_loc$merc_lat)
+df_loc$merc_long = as.numeric(df_loc$merc_long)
+
+#PLOTTING THE CUSTOMER AND THE MERCHANT
+merc_map <- function (id ){
+  
+  plot(getMap(resolution = "low"), xlim = c(113, 154), ylim = c(-44, -10), asp = 1)
+  
+  l = subset (df_loc[,c("customer_id","merc_long","merc_lat")], customer_id == id)
+  l <- l[c("merc_long","merc_lat")]
+  points(as.numeric(l$merc_long), as.numeric(l$merc_lat), col ="Steelblue", cex = .5)
+  
+  k = subset (df_loc[,c("customer_id","cust_long","cust_lat")], customer_id == id)
+  k <- unique(k[c("cust_long","cust_lat")])
+  points(as.numeric(k$cust_long), as.numeric(k$cust_lat), col ="#FF0000", cex = 1)
+}
