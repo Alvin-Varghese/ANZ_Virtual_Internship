@@ -3,6 +3,9 @@ library(readxl)
 library(tidyverse)
 library(lubridate)
 library(funModeling)
+library(sf)
+library(rnaturalearth)
+library(rnaturalearthdata)
 ```
 
 ONCE THE LIBRARIES ARE LOADED, OUR NEXT STEP WILL BE LOADING THE DATASET AND TAKING A LOOK AT THE DATA
@@ -77,12 +80,43 @@ ggplot(data = df, aes(x=movement, y=amount)) +
 
 WE CAN GET THE LONGITUDE AND LATITUDE FOR THE CUSTOMERS AND THE MERCHANTS
 ```{r}
+#Extracting Latitude and Longitudes
 #1. Customer location
 cust_loc = data.frame(df$long_lat)
 cust_loc = data.frame(separate(cust_loc, col = df.long_lat, into = c("cust_long","cust_lat"), sep = " "))
-df <- cbind(df, cust_loc)
+
 #2. Merchant location
 merc_loc = data.frame(df$merchant_long_lat)
 merc_loc = data.frame(separate(merc_loc, col = df.merchant_long_lat, into = c("merc_long","merc_lat"), sep = " "))
-df <- cbind(df, merc_loc)
+
+df_loc <- cbind(df$customer_id,cust_loc,merc_loc)
+colnames(df_loc)[which(names(df_loc)=="df$customer_id")] <- "customer_id"
+
+df_loc$cust_long = as.numeric(df_loc$cust_long)
+df_loc$cust_lat = as.numeric(df_loc$cust_lat)
+df_loc$merc_lat = as.numeric(df_loc$merc_lat)
+df_loc$merc_long = as.numeric(df_loc$merc_long)
+
 ```
+
+```{r}
+#PLOTTING THE CUSTOMER AND THE MERCHANT
+merc_map <- function (id ){
+  
+  l = subset (df_loc[,c("customer_id","merc_long","merc_lat")], customer_id == id)
+  l <- l[c("merc_long","merc_lat")]
+  
+  k = subset (df_loc[,c("customer_id","cust_long","cust_lat")], customer_id == id)
+  k <- unique(k[c("cust_long","cust_lat")])
+  
+  ggplot(data = ne_countries(scale = "medium", returnclass = "sf")) +
+    geom_sf(fill = "#5a5a5a") +
+    coord_sf(xlim = c(113,154), ylim = c(-44,-10), expand = FALSE) +
+    geom_point(data = l, aes(x = merc_long, y = merc_lat),na.rm=TRUE, size = 1, shape = 4, colour ="#08e8de" ) +
+    geom_point(data = k, aes(x = cust_long, y = cust_lat),na.rm=TRUE, size = 2, shape = 24, fill = "#f13f09") + xlab("Longitude") + ylab("Latitude") + scale_color_manual(values = c("steelblue", "red"),labels = c("Merchant", "Customer"))
+}
+```
+```{r}
+merc_map(id ='CUS-3026014945') #EXAMPLE
+```
+
