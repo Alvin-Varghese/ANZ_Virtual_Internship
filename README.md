@@ -4,7 +4,7 @@ This is my work done towards the ANZ virtual internship programme. This repos co
 
 ##### CURRENT STATUS:
 - [x] Task 1 (EDA)
-- [ ] Task 2 (Predictive Analysis)
+- [x] Task 2 (Predictive Analysis)
  
 The project consisted of two tasks, on with basic EDA and other on predictive analysis. You can check out the programme [here](https://www.insidesherpa.com/virtual-internships/prototype/ZLJCsrpkHo9pZBJNY/Data%40ANZ%20Program).
 
